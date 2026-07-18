@@ -1,0 +1,507 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+generator zod {
+  provider                         = "zod-prisma-types"
+  output                           = "../src/generated/zod"
+  createInputTypes                 = true
+  createModelTypes                 = true
+  addInputTypeValidation           = true
+  useDefaultValidators             = true
+  coerceDate                       = true
+  writeNullishInModelTypes         = false
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+  VENDOR
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum EligibilityStatus {
+  PENDING
+  ELIGIBLE
+  NOT_ELIGIBLE
+}
+
+enum CeremonyType {
+  BACHELOR
+  MASTER
+}
+
+enum CeremonySemester {
+  FALL
+  SPRING
+  SUMMER
+}
+
+enum CeremonyStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+  ATTENDED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum TicketStatus {
+  ACTIVE
+  USED
+  CANCELLED
+}
+
+enum OutfitStatus {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+enum OutfitType {
+  GOWN
+  CAP
+  HOOD
+}
+
+enum RentalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+}
+
+enum SeatStatus {
+  AVAILABLE
+  RESERVED
+  OCCUPIED
+}
+
+enum VendorRequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum VendorApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ScanStatus {
+  VALID
+  INVALID
+  ALREADY_USED
+}
+
+enum InstructionTarget {
+  STUDENT
+  PARENT
+  GUEST
+}
+
+model Campus {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  location    String?
+  imageUrl    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  users       User[]
+  ceremonies  Ceremony[]
+  departmentHeads DepartmentHead[]
+  chatRooms   ChatRoom[]
+  outfits     Outfit[]
+
+  @@map("campuses")
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  fullName          String
+  email             String            @unique
+  passwordHash      String
+  phone             String?
+  role              UserRole
+  status            UserStatus        @default(ACTIVE)
+
+  // student fields
+  universityId      String?           @unique
+  faculty           String?
+  department        String?
+  graduationYear    Int?
+  graduationSemester CeremonySemester?
+  eligibilityStatus EligibilityStatus?
+
+  // profile photo
+  avatarUrl              String?
+
+  // vendor fields
+  companyName            String?
+  serviceType            String?
+  vendorApprovalStatus   VendorApprovalStatus? 
+  selectedServiceId      Int?
+  campusId          Int?
+  campus            Campus?           @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  registrations     StudentCeremonyRegistration[]
+  ticketReservations TicketReservation[]
+  outfitRentals     OutfitRental[]
+  seatAssignments   SeatAssignment[]
+  notifications     Notification[]
+  qrScans           QrScan[]          @relation("ScannedBy")
+  assignedVendorRequests VendorRequest[] @relation("VendorRequests")
+  createdVendorRequests  VendorRequest[] @relation("AssignedBy")
+  departmentHeads        DepartmentHead[] @relation("AdminDepartmentHeads")
+  adminChatRooms         ChatRoom[]      @relation("AdminChats")
+  vendorChatRooms        ChatRoom[]      @relation("VendorChats")
+  sentMessages           ChatMessage[]   @relation("SentMessages")
+  sentEmails             EmailLog[]      @relation("SentEmails")
+  receivedEmails         EmailLog[]      @relation("ReceivedEmails")
+  selectedService        CeremonyServiceOffering? @relation("VendorSelectedService", fields: [selectedServiceId], references: [id], onDelete: SetNull)
+
+  @@index([role])
+  @@index([status])
+  @@index([role, status])
+  @@map("users")
+}
+
+model Ceremony {
+  id            Int               @id @default(autoincrement())
+  title         String
+  description   String?
+  ceremonyDate  DateTime
+  startTime     DateTime?
+  endTime       DateTime?
+  venue         String
+  capacity      Int?
+  ceremonyType  CeremonyType
+  semester      CeremonySemester
+  status        CeremonyStatus    @default(UPCOMING)
+  ticketPrice   Decimal?          @db.Decimal(10, 2)
+  bannerUrl     String?
+  campusId      Int?
+  campus        Campus?           @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  registrations     StudentCeremonyRegistration[]
+  ticketReservations TicketReservation[]
+  outfitRentals     OutfitRental[]
+  seats             Seat[]
+  seatAssignments   SeatAssignment[]
+  vendorRequests    VendorRequest[]
+  instructions      CeremonyInstruction[]
+  serviceOfferings  CeremonyServiceOffering[]
+
+  @@map("ceremonies")
+}
+
+model StudentCeremonyRegistration {
+  id                 Int                @id @default(autoincrement())
+  userId             Int
+  ceremonyId         Int
+  registrationStatus RegistrationStatus @default(REGISTERED)
+  registeredAt       DateTime           @default(now())
+
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ceremony           Ceremony           @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ceremonyId])
+  @@map("student_ceremony_registrations")
+}
+
+model TicketReservation {
+  id                Int               @id @default(autoincrement())
+  userId            Int
+  ceremonyId        Int
+  numberOfTickets   Int
+  pricePerTicket    Decimal           @default(0.00) @db.Decimal(10, 2)
+  totalPrice        Decimal           @default(0.00) @db.Decimal(10, 2)
+  reservationStatus ReservationStatus @default(PENDING)
+  reservedAt        DateTime          @default(now())
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ceremony          Ceremony          @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  tickets           Ticket[]
+
+  @@map("ticket_reservations")
+}
+
+model Ticket {
+  id            Int          @id @default(autoincrement())
+  reservationId Int
+  ticketCode    String       @unique
+  qrCode        String
+  guestName     String?
+  seatNumber    String?
+  ticketStatus  TicketStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+
+  reservation   TicketReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  qrScans       QrScan[]
+
+  @@map("tickets")
+}
+
+model Outfit {
+  id                Int           @id @default(autoincrement())
+  campusId          Int
+  outfitType        OutfitType
+  size              String?      
+  color             String?      
+  ceremonyType      CeremonyType? 
+  quantityAvailable Int           @default(0)
+  rentalPrice       Decimal       @default(0.00) @db.Decimal(10, 2)
+  status            OutfitStatus  @default(AVAILABLE)
+  imageUrl          String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  campus            Campus        @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  outfitRentals     OutfitRental[]
+
+  @@map("outfits")
+}
+
+model OutfitRental {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  ceremonyId    Int
+  outfitId      Int
+  selectedSize  String
+  rentalStatus  RentalStatus @default(PENDING)
+  pickupDate    DateTime?
+  returnDate    DateTime?
+  rentedAt      DateTime     @default(now())
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ceremony      Ceremony     @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  outfit        Outfit       @relation(fields: [outfitId], references: [id], onDelete: Restrict)
+
+  @@map("outfit_rentals")
+}
+
+model Seat {
+  id          Int        @id @default(autoincrement())
+  ceremonyId  Int
+  seatNumber  String
+  sectionName String?
+  rowNumber   String?
+  seatStatus  SeatStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now())
+
+  ceremony    Ceremony   @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  assignments SeatAssignment[]
+
+  @@unique([ceremonyId, seatNumber])
+  @@map("seats")
+}
+
+model SeatAssignment {
+  id            Int       @id @default(autoincrement())
+  userId        Int?
+  ceremonyId    Int
+  seatId        Int
+  guestName     String?
+  semesterGroup CeremonySemester?
+  assignedAt    DateTime  @default(now())
+
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ceremony    Ceremony  @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  seat        Seat      @relation(fields: [seatId], references: [id], onDelete: Cascade)
+
+  @@unique([ceremonyId, seatId])
+  @@map("seat_assignments")
+}
+
+model CeremonyServiceOffering {
+  id           Int           @id @default(autoincrement())
+  ceremonyId   Int
+  title        String
+  description  String?
+  price        Decimal       @db.Decimal(10, 2)
+  quantity     Int           @default(1)
+  quality      String?
+  imageUrl     String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  ceremony     Ceremony      @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  vendorRequests VendorRequest[]
+  applicants   User[]        @relation("VendorSelectedService")
+
+  @@map("ceremony_service_offerings")
+}
+
+model VendorRequest {
+  id                 Int                 @id @default(autoincrement())
+  vendorId           Int
+  ceremonyId         Int
+  assignedById       Int
+  serviceOfferingId  Int?
+  requestTitle       String
+  requestDescription String?
+  requestStatus      VendorRequestStatus @default(PENDING)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  vendor             User                        @relation("VendorRequests", fields: [vendorId], references: [id], onDelete: Cascade)
+  ceremony           Ceremony                    @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  assignedBy         User                        @relation("AssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
+  serviceOffering    CeremonyServiceOffering?    @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
+
+  @@map("vendor_requests")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  title      String
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model DepartmentTitle {
+  id          Int             @id @default(autoincrement())
+  title       String          @unique
+  createdAt   DateTime        @default(now())
+
+  heads       DepartmentHead[]
+
+  @@map("department_titles")
+}
+
+model DepartmentHead {
+  id          Int            @id @default(autoincrement())
+  titleId     Int
+  adminId     Int
+  campusId    Int
+  name        String
+  photoUrl    String?
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  title       DepartmentTitle @relation(fields: [titleId], references: [id], onDelete: Restrict)
+  admin       User            @relation("AdminDepartmentHeads", fields: [adminId], references: [id], onDelete: Restrict)
+  campus      Campus          @relation(fields: [campusId], references: [id], onDelete: Restrict)
+
+  @@map("department_heads")
+}
+
+model CeremonyInstruction {
+  id          Int               @id @default(autoincrement())
+  ceremonyId  Int
+  target      InstructionTarget
+  title       String
+  content     String
+  order       Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  ceremony    Ceremony          @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+
+  @@map("ceremony_instructions")
+}
+
+model QrScan {
+  id          Int        @id @default(autoincrement())
+  ticketId    Int
+  scannedById Int
+  scanStatus  ScanStatus
+  scanNote    String?
+  scannedAt   DateTime   @default(now())
+
+  ticket      Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  scannedBy   User       @relation("ScannedBy", fields: [scannedById], references: [id], onDelete: Restrict)
+
+  @@map("qr_scans")
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+model EmailLog {
+  id          Int         @id @default(autoincrement())
+  sentById    Int
+  recipientId Int?
+  campusId    Int?
+  toEmail     String
+  subject     String
+  body        String
+  status      EmailStatus @default(PENDING)
+  sentAt      DateTime    @default(now())
+
+  sentBy      User        @relation("SentEmails", fields: [sentById], references: [id], onDelete: Restrict)
+  recipient   User?       @relation("ReceivedEmails", fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@map("email_logs")
+}
+
+model ChatRoom {
+  id          Int           @id @default(autoincrement())
+  campusId    Int
+  adminId     Int
+  vendorId    Int
+  createdAt   DateTime      @default(now())
+
+  campus      Campus        @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  admin       User          @relation("AdminChats", fields: [adminId], references: [id], onDelete: Cascade)
+  vendor      User          @relation("VendorChats", fields: [vendorId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+
+  @@unique([adminId, vendorId])
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id         Int       @id @default(autoincrement())
+  roomId     Int
+  senderId   Int
+  content    String
+  isRead     Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  room       ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender     User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
