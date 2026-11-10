@@ -202,7 +202,7 @@ export function ProfilePage({ Layout }: ProfilePageProps) {
         <Card className="p-6">
           <h4 className="text-lg font-semibold mb-1">Change Password</h4>
           <p className="text-xs text-muted-foreground mb-4">
-            Password must contain exactly {PASSWORD_LENGTH} characters.
+            Password must be at least {PASSWORD_LENGTH} characters.
           </p>
           <form onSubmit={handlePasswordChange} className="space-y-4">
             {/* Current password */}
@@ -214,7 +214,6 @@ export function ProfilePage({ Layout }: ProfilePageProps) {
                   type={showOld ? "text" : "password"}
                   placeholder="Enter current password"
                   value={pwForm.oldPassword}
-                  maxLength={PASSWORD_LENGTH}
                   className="pr-10"
                   onChange={(e) => setPwForm({ ...pwForm, oldPassword: e.target.value })}
                   required
@@ -233,9 +232,8 @@ export function ProfilePage({ Layout }: ProfilePageProps) {
                 <Input
                   id="newPassword"
                   type={showNew ? "text" : "password"}
-                  placeholder={`Exactly ${PASSWORD_LENGTH} characters`}
+                  placeholder={`At least ${PASSWORD_LENGTH} characters`}
                   value={pwForm.newPassword}
-                  maxLength={PASSWORD_LENGTH}
                   className={`pr-10 ${pwError ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                   onChange={(e) => {
                     setPwForm({ ...pwForm, newPassword: e.target.value });
@@ -259,7 +257,6 @@ export function ProfilePage({ Layout }: ProfilePageProps) {
                   type={showConfirm ? "text" : "password"}
                   placeholder="Repeat new password"
                   value={pwForm.confirmPassword}
-                  maxLength={PASSWORD_LENGTH}
                   className={`pr-10 ${pwError ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                   onChange={(e) => {
                     setPwForm({ ...pwForm, confirmPassword: e.target.value });

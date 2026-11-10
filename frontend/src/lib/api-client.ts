@@ -1,5 +1,13 @@
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+// Falls back to the current page's hostname (not a hardcoded "localhost")
+// so the app also works when opened from another device on the same
+// network (e.g. a phone hitting the dev machine's LAN IP).
+function resolveBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:3001/api`;
+  }
+  return "http://localhost:3001/api";
+}
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 // sessionStorage is tab-isolated: each browser window keeps its own credentials
@@ -50,7 +58,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const { method = "GET", body, auth = true, params } = options;
 
-  const url = new URL(`${BASE_URL}${path}`);
+  const url = new URL(`${resolveBaseUrl()}${path}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) url.searchParams.set(key, String(value));

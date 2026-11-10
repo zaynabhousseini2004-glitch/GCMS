@@ -7,7 +7,7 @@ import {
   Card,
   Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Input, Label,
 } from "@/components/ui";
-import { Plus, Trash2, MapPin, ImageIcon, Pencil } from "lucide-react";
+import { Plus, Trash2, MapPin, Building2, Pencil } from "lucide-react";
 import { useCampuses, useCreateCampus, useDeleteCampus, useUpdateCampus } from "@/hooks/mutations/useSuperadmin";
 import { useUploadCampusImage } from "@/hooks/mutations/useUpload";
 import { ImageUpload } from "@/components/shared/ImageUpload";
@@ -70,16 +70,24 @@ export function SACampuses() {
               {/* Campus image */}
               <button
                 type="button"
-                className="relative w-full h-28 rounded-lg overflow-hidden border bg-muted flex items-center justify-center mb-3 hover:opacity-90"
-                onClick={() => setImageModalCampus({ id: campus.id, imageUrl: (campus as { imageUrl?: string | null }).imageUrl })}
-                title="Upload campus image"
+                className="group relative w-full h-28 rounded-lg overflow-hidden border bg-muted flex items-center justify-center mb-3"
+                onClick={() => setImageModalCampus({ id: campus.id, imageUrl: campus.imageUrl })}
+                title={campus.imageUrl ? "Change campus image" : "Upload campus image"}
               >
-                {(campus as { imageUrl?: string | null }).imageUrl ? (
-                  <Image src={(campus as { imageUrl?: string | null }).imageUrl!} alt={campus.name} fill className="object-cover" />
+                {campus.imageUrl ? (
+                  <>
+                    <Image src={campus.imageUrl} alt={campus.name} fill className="object-cover transition-opacity group-hover:opacity-80" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-white">
+                        <Pencil className="w-3.5 h-3.5" />
+                        Change image
+                      </span>
+                    </span>
+                  </>
                 ) : (
-                  <span className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <ImageIcon size={28} />
-                    <span className="text-xs">Add image</span>
+                  <span className="relative w-full h-full flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-primary/10 to-primary/5 text-muted-foreground transition-colors group-hover:from-primary/15 group-hover:to-primary/10">
+                    <Building2 size={26} className="text-primary/40" />
+                    <span className="text-xs font-medium">No image yet — click to add</span>
                   </span>
                 )}
               </button>

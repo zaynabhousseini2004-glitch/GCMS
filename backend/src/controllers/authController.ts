@@ -15,7 +15,10 @@ const RegisterSchema = z.object({
 });
 
 const LoginSchema = z.object({
-  email: z.string().email(),
+  // trim + lowercase BEFORE the .email() format check, so a stray space or
+  // auto-capitalized first letter (common on mobile keyboards) doesn't get
+  // rejected as "invalid email" before it ever reaches the DB lookup.
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
@@ -189,6 +192,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  // LoginSchema already trims + lowercases the email before validation.
   const { email, password } = parsed.data;
 
   const user = await prisma.user.findUnique({

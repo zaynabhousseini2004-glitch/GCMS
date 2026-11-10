@@ -181,7 +181,6 @@ export default function Login() {
                     placeholder="••••••••"
                     className="h-12 border-border focus:border-primary focus:ring-primary pr-10"
                     value={password}
-                    maxLength={8}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />

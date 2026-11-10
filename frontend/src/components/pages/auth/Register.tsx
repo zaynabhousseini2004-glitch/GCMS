@@ -255,10 +255,9 @@ export default function Register() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder={`Exactly ${PASSWORD_LENGTH} characters`}
+                    placeholder={`At least ${PASSWORD_LENGTH} characters`}
                     className={`h-11 bg-muted/50 pr-10 ${passwordError ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                     value={password}
-                    maxLength={PASSWORD_LENGTH}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (passwordError) setPasswordError(validatePassword(e.target.value) ?? "");
@@ -274,7 +273,7 @@ export default function Register() {
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Must be exactly {PASSWORD_LENGTH} characters — {PASSWORD_LENGTH - password.length} remaining
+                  Must be at least {PASSWORD_LENGTH} characters
                 </p>
               </div>
 
@@ -288,7 +287,6 @@ export default function Register() {
                     placeholder="Repeat your password"
                     className={`h-11 bg-muted/50 pr-10 ${passwordError ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                     value={confirmPassword}
-                    maxLength={PASSWORD_LENGTH}
                     onChange={(e) => {
                       setConfirmPassword(e.target.value);
                       if (passwordError) setPasswordError("");

@@ -287,9 +287,8 @@ export function SAUsers() {
               <div className="relative">
                 <Input
                   type={createShowPw ? "text" : "password"}
-                  placeholder={`Exactly ${PASSWORD_LENGTH} characters`}
+                  placeholder={`At least ${PASSWORD_LENGTH} characters`}
                   value={createForm.password}
-                  maxLength={PASSWORD_LENGTH}
                   className={`pr-10 ${createPwErr ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                   onChange={(e) => { setCreateForm({ ...createForm, password: e.target.value }); if (createPwErr) setCreatePwErr(""); }}
                 />
@@ -300,7 +299,7 @@ export function SAUsers() {
               </div>
               {createPwErr
                 ? <p className="text-xs text-red-600">{createPwErr}</p>
-                : <p className="text-xs text-muted-foreground">Must be exactly {PASSWORD_LENGTH} characters</p>
+                : <p className="text-xs text-muted-foreground">Must be at least {PASSWORD_LENGTH} characters</p>
               }
             </div>
             {/* Phone */}
@@ -339,7 +338,7 @@ export function SAUsers() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); resetCreate(); }}>Cancel</Button>
             <Button className="bg-primary hover:bg-primary/85 text-primary-foreground" onClick={handleCreate}
-              disabled={createAdmin.isPending || !createForm.fullName || !createForm.email || createForm.password.length !== PASSWORD_LENGTH || !createForm.campusId}>
+              disabled={createAdmin.isPending || !createForm.fullName || !createForm.email || createForm.password.length < PASSWORD_LENGTH || !createForm.campusId}>
               {createAdmin.isPending ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
@@ -374,9 +373,8 @@ export function SAUsers() {
               <div className="relative">
                 <Input
                   type={editShowPw ? "text" : "password"}
-                  placeholder={`Exactly ${PASSWORD_LENGTH} characters`}
+                  placeholder={`At least ${PASSWORD_LENGTH} characters`}
                   value={editForm.password}
-                  maxLength={PASSWORD_LENGTH}
                   className={`pr-10 ${editPwErr ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                   onChange={(e) => { setEditForm({ ...editForm, password: e.target.value }); if (editPwErr) setEditPwErr(""); }}
                 />
@@ -387,7 +385,7 @@ export function SAUsers() {
               </div>
               {editPwErr
                 ? <p className="text-xs text-red-600">{editPwErr}</p>
-                : <p className="text-xs text-muted-foreground">Must be exactly {PASSWORD_LENGTH} characters if changed</p>
+                : <p className="text-xs text-muted-foreground">Must be at least {PASSWORD_LENGTH} characters if changed</p>
               }
             </div>
             {/* Phone */}

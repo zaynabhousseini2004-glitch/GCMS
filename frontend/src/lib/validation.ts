@@ -27,11 +27,12 @@ export function validatePhone(value: string): string | null {
 }
 
 /**
- * Returns an error message if the password is not exactly PASSWORD_LENGTH chars,
- * or null if valid. Empty string returns an error (password is required).
+ * Returns an error message if the password is shorter than PASSWORD_LENGTH
+ * chars, or null if valid. Matches the backend's min-length rule — there is
+ * no maximum.
  */
 export function validatePassword(value: string): string | null {
-  if (value.length !== PASSWORD_LENGTH)
-    return `Password must contain exactly ${PASSWORD_LENGTH} characters.`;
+  if (value.length < PASSWORD_LENGTH)
+    return `Password must be at least ${PASSWORD_LENGTH} characters.`;
   return null;
 }

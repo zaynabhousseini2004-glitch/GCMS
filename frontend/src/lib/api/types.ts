@@ -103,6 +103,7 @@ export interface Campus {
   id: number;
   name: string;
   location?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   _count?: { users: number; ceremonies: number };

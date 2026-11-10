@@ -17,7 +17,7 @@ const ADMIN_SELECT = {
 
 const CreateAdminSchema = z.object({
   fullName: z.string().min(2),
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8),
   phone: z.string().optional(),
   campusId: z.number().int().positive().optional(),
@@ -25,7 +25,12 @@ const CreateAdminSchema = z.object({
 
 const UpdateAdminSchema = z.object({
   fullName: z.string().min(2).optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
+  // Optional — the superadmin "Edit Admin" form can reset a password here.
+  // Previously this field didn't exist on the schema, so Zod silently
+  // stripped it and the password was NEVER actually updated even though
+  // the request returned 200.
+  password: z.string().min(8).optional(),
   phone: z.string().optional(),
   campusId: z.number().int().positive().nullable().optional(),
 });
@@ -133,9 +138,15 @@ export async function updateAdminUser(
     }
   }
 
+  // Hash the new password exactly once, here, and only if one was provided —
+  // `password` is never a column on User, so it must never be passed
+  // straight through to Prisma as-is.
+  const { password, ...rest } = parsed.data;
+  const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
+
   const user = await prisma.user.update({
     where: { id },
-    data: parsed.data,
+    data: { ...rest, ...(passwordHash ? { passwordHash } : {}) },
     select: ADMIN_SELECT,
   });
 
